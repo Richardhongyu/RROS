@@ -1,4 +1,4 @@
-use crate::{sched::this_rros_rq, thread::KthreadRunner};
+use crate::{sched::this_rros_rq, thread::KthreadRunner, thread};
 
 use kernel::{c_str, prelude::*};
 
@@ -210,8 +210,9 @@ pub fn test_thread_context_switch() {
 // }
 
 fn kfn_1() {
-    for _i in 0..10 {
-        pr_emerg!("hello! from rros~~~~~~~~~~~~");
+    for i in 0..100000 {
+        thread::rros_sleep(1000000000);
+        pr_emerg!("{} hello! from rros~~~~~~~~~~~~", i);
     }
     // for t in 0..2000000 {
     // thread::rros_sleep(1000000000);
@@ -275,8 +276,8 @@ pub fn kfn_2() {
     //     }
     //     pr_debug!("fn 2, a is {}",a);
     // }
-    for _i in 0..10 {
-        // thread::rros_sleep(1000000000);
+    for i in 0..100000 {
+        thread::rros_sleep(1000000000);
         // let x = unsafe{clock::RROS_REALTIME_CLOCK.read()};
         // pr_debug!("kfn2: x is {}",x);
         // // for i in 1..100 {
@@ -284,7 +285,7 @@ pub fn kfn_2() {
         // // }
         // let y = unsafe{clock::RROS_REALTIME_CLOCK.read()};
         // pr_debug!("kfn2: y is {}",y);
-        // pr_debug!("kfn_2: waste time is {}",y-x);
-        pr_info!("world! from rros~~~~~~~~~~~~");
+        // pr_debug!("kfn_2: waste time is {}",y-x);        
+        pr_info!("{} world! from rros~~~~~~~~~~~~", i);
     }
 }

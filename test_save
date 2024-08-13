@@ -1,0 +1,2 @@
+break machine_kexec
+break kernel_kexec

@@ -415,10 +415,10 @@ impl KernelModule for Rros {
                 return Err(_e);
             }
         }
-        test_lantency();
+        // test_lantency();
 
         // add recovery code
-        enable_irq();
+        // enable_irq();
 
         // let mut rros_kthread1 = rros_kthread::new(fn1);
         // let mut rros_kthread2 = rros_kthread::new(fn2);

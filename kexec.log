@@ -1,0 +1,64 @@
+kexec -p /data/vmlinux \
+--initrd=/data/rros_rootfs.cpio.gz \
+--append="root=PARTLABEL=rootfs 1 maxcpus=1 reset_devices"
+
+
+/sbin/kexec -d -p --t zImage --command-line="BOOT_IMAGE=/Image.gz  \
+root=UUID=223ecc81-7069-45f9-9309-c641eba776c8 ro nr_cpus=1 maxcpus=1 pci=nomsi \
+irqpoll nousb ata_piix.prefer_ms_hyperv=0 security= audit=0 \
+systemd.unit=kdump-tools.service" \
+--initrd=/data/rros_rootfs.cpio.gz /boot/Image.gz
+
+/sbin/kexec -d -p --t zImage --command-line="
+root=UUID=223ecc81-7069-45f9-9309-c641eba776c8 ro nr_cpus=1 maxcpus=1 pci=nomsi \
+irqpoll nousb ata_piix.prefer_ms_hyperv=0 security= audit=0 \
+systemd.unit=kdump-tools.service" \
+--initrd=/data/rros_rootfs.cpio.gz /shared_dir/Image.gz
+
+/sbin/kexec -d -p --t Image  --initrd=/data/rros_rootfs.cpio.gz /shared_dir/Image.gz
+
+/sbin/kexec -d -p --t Image  --initrd=/data/rros_rootfs.cpio.gz /boot/Image.gz
+
+
+echo 1 >/proc/sys/kernel/sysrq
+echo c > /proc/sysrq-trigger
+
+service kdump-tools status
+service kdump-tools stop
+
+cat /sys/kernel/kexec_crash_loaded 
+
+mount -t 9p -o trans=virtio,version=9p2000.L hostshare /shared_dir
+
+echo 0 > /proc/sys/kernel/printk
+
+cat .config | grep CONFIG_KEXEC=
+cat .config | grep CONFIG_CRASH_DUMP=
+cat .config | grep CONFIG_PROC_VMCORE=
+cat .config | grep CONFIG_PROC_KCORE=
+cat .config | grep CONFIG_SYSFS=
+cat .config | grep CONFIG_DEBUG_INFO=
+
+apt-get install makedumpfile kdump-tools -o Acquire::http::proxy="http://10.161.28.28:7890"
+
+crash /shared_dir/vmlinux --machdep vabits_actual=64
+
+crash /shared_dir/vmlinux --machdep vabits_actual=48 /proc/kcore
+
+cat /proc/1/maps
+
+/sbin/kexec -d -p --t Image  --initrd=/data/rros_rootfs.cpio.gz /shared_dir/Image.gz
+
+`
+/sbin/kexec -d -l --t Image  --initrd=/data/rros_rootfs.cpio.gz /shared_dir/Image.gz 
+/sbin/kexec -d -l --t Image --initrd=/data/rros_rootfs.cpio.gz --reuse-cmdline /shared_dir/Image.gz 
+/sbin/kexec -e
+/sbin/kexec -d -l --t Image --initrd=/data/rros_rootfs.cpio.gz  /shared_dir/Image.gz --append="rdinit=/linuxrc console=ttyAMA0 earlycon=pl011,0x9000000 nokaslr"
+/sbin/kexec -e
+echo 1 >/proc/sys/kernel/sysrq
+
+echo c > /proc/sysrq-trigger
+
+kimage=0xffff0000c544f800
+
+qemu-system-aarch64 -nographic  -smp 4 -m 8192 -kernel arch/arm64/boot/Image  -drive if=none,file=../2022-01-28-raspios-bullseye-arm64.img,id=hd0,format=raw  -machine type=virt -cpu cortex-a57 -append "root=/dev/vda2 panic=1 rootfstype=ext4 rw console=ttyAMA0 crashkernel=512M"  -device virtio-blk-device,drive=hd0 -net user,hostfwd=::2222-:22 -net nic -fsdev local,security_model=passthrough,id=fsdev0,path=/workspace/shared_dir -device virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=hostshare 
