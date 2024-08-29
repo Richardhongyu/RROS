@@ -1,0 +1,8 @@
+break kernel_kexec
+break machine_kexec
+break /workspace/RTOS/arch/arm64/kernel/machine_kexec.c:179
+break /workspace/RTOS/arch/arm64/kernel/machine_kexec.c:181
+break cpu_soft_restart
+break __cpu_soft_restart
+break /workspace/RTOS/arch/arm64/kernel/cpu-reset.h:28
+break arch/arm64/kernel/relocate_kernel.S:80

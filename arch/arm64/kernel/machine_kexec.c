@@ -26,6 +26,8 @@
 /* Global variables for the arm64_relocate_new_kernel routine. */
 extern const unsigned char arm64_relocate_new_kernel[];
 extern const unsigned long arm64_relocate_new_kernel_size;
+void* migration_threads;
+void* phy_migration_threads;
 
 /**
  * kexec_image_info - For debugging output.
@@ -180,6 +182,64 @@ void machine_kexec(struct kimage *kimage)
 
 	local_daif_mask();
 
+	phys_addr_t src_phys_addr = virt_to_phys(((struct task_struct*)migration_threads)->stack); // Replace with actual source physical address
+	//   fffffff
+	// 230000000
+	//   0000000
+	// pr_info("migration_threads: %lx\n", ((struct task_struct*)migration_threads)->stack);
+	// pr_info("src_phys_addr: %lx\n", src_phys_addr);
+    phys_addr_t dst_phys_addr = 0x0000000230000000; // Replace with actual destination physical address
+    size_t size = 16384; // Replace with the actual size you want to copy
+
+    void *src_vaddr;
+    void *dst_vaddr;
+
+    // Map the physical addresses to kernel virtual addresses
+    // src_vaddr = ioremap(src_phys_addr, size);
+    // if (!src_vaddr) {
+    //     pr_err("Failed to map source physical address\n");
+    //     // return -ENOMEM;
+    // }
+	src_vaddr = (void*)((struct task_struct*)migration_threads)->stack;
+
+    // dst_vaddr = ioremap(dst_phys_addr, size);
+    // if (!dst_vaddr) {
+    //     pr_err("Failed to map destination physical address\n");
+    //     iounmap(src_vaddr);
+    //     // return -ENOMEM;
+    // }
+	dst_vaddr = (void*)0xffff0000d9664000;
+	// = kmalloc(size, GFP_KERNEL);
+	// pr_info("dst_vaddr: %lx\n", dst_vaddr);
+
+	phy_migration_threads = virt_to_phys(dst_vaddr);
+	// pr_info("phy_migration_threads: %lx\n", phy_migration_threads);
+
+    // Copy the content from the source to the destination
+    memcpy(dst_vaddr, src_vaddr, size);
+
+	dst_vaddr = (void*)0xffff0000d9669000;
+	// = kmalloc(size, GFP_KERNEL);
+	size = 104;
+	// pr_info("dst_vaddr: %lx\n", dst_vaddr);
+
+	phy_migration_threads = virt_to_phys(dst_vaddr);
+	src_vaddr = (void*)&((struct task_struct*)migration_threads)->thread.cpu_context;
+	// pr_info("phy_migration_threads: %lx\n", src_vaddr);
+
+    // Copy the content from the source to the destination
+    memcpy(dst_vaddr, src_vaddr, size);
+
+
+	size = 8;
+	dst_vaddr = (void*)0xffff0000d966a000;
+	src_vaddr = (void*)&((struct task_struct*)migration_threads)->stack;
+	memcpy(dst_vaddr, src_vaddr, size);
+
+    // Unmap the addresses
+    // iounmap(src_vaddr);
+    // iounmap(dst_vaddr);
+
 	/*
 	 * cpu_soft_restart will shutdown the MMU, disable data caches, then
 	 * transfer control to the kern_reloc which contains a copy of
@@ -196,6 +256,58 @@ void machine_kexec(struct kimage *kimage)
 			 kimage->arch.dtb_mem);
 
 	BUG(); /* Should never get here. */
+}
+
+void rros_restore_thread(void) 
+{
+	if (crash_kernel_flag == 0) {
+		void *src_vaddr;
+		void *dst_vaddr;
+		void *src1_vaddr;
+		void *dst1_vaddr;
+		void *pre_sp;
+		void *pre_pc;
+		void *pre_now_stack_dis;
+		void *original_stack;
+		size_t size = 16384;
+
+		src_vaddr = (void*)0xffff0000d9664000;
+		dst_vaddr = (void*)((struct task_struct*)migration_threads)->stack;
+		original_stack = dst_vaddr;
+		memcpy(dst_vaddr, src_vaddr, size);
+		pr_info("migration_threads: %lx\n", *(unsigned long*)((struct task_struct*)migration_threads)->stack);
+
+		size = 8;
+		src1_vaddr = (void*)0xffff0000d966a000;
+		// dst_vaddr = (void*)&((struct task_struct*)migration_threads)->stack;
+		dst1_vaddr = vmalloc(size);
+		memcpy(dst1_vaddr, src1_vaddr, size);
+		// TODO: add a vfree
+		// vfree(dst_vaddr);
+
+		// pre_now_stack_dis = dst_vaddr-dst1_vaddr;
+
+		// pre_sp = ((struct task_struct*)migration_threads)->thread.cpu_context.sp
+		// pre_pc = ((struct task_struct*)migration_threads)->thread.cpu_context.pc
+
+		src_vaddr = (void*)0xffff0000d9669000;
+		dst_vaddr = (void*)&((struct task_struct*)migration_threads)->thread.cpu_context;
+		size = 104;
+		memcpy(dst_vaddr, src_vaddr, size);
+		
+		pr_info("migration_threads: %lx\n", (unsigned long*)((struct task_struct*)migration_threads)->thread.cpu_context.sp);
+
+		// ((struct task_struct*)migration_threads)->thread.cpu_context.sp
+		// ((struct task_struct*)migration_threads)->thread.cpu_context.sp += pre_now_stack_dis;
+		pr_info("migration_threads: %lx\n", (unsigned long*)((struct task_struct*)migration_threads)->thread.cpu_context.sp);
+		pr_info("migration_threads: %lx\n", (void*)(*(unsigned long*)dst1_vaddr));
+		pr_info("migration_threads: %lx\n", original_stack);
+		pre_now_stack_dis = (void*)((struct task_struct*)migration_threads)->thread.cpu_context.sp-(void*)(*(unsigned long*)dst1_vaddr);
+		pr_info("migration_threads: %lx\n", pre_now_stack_dis);
+		// ((struct task_struct*)migration_threads)->thread.cpu_context.sp = (unsigned long)pre_now_stack_dis+(unsigned long)original_stack;
+		// ((struct task_struct*)migration_threads)->thread.cpu_context.pc += pre_now_stack_dis;
+		
+	}
 }
 
 static void machine_kexec_mask_interrupts(void)

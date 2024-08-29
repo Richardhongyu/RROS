@@ -63,6 +63,8 @@ EXPORT_SYMBOL(memstart_addr);
  */
 phys_addr_t arm64_dma_phys_limit __ro_after_init;
 
+bool crash_kernel_flag = 0;
+
 #ifdef CONFIG_KEXEC_CORE
 /*
  * reserve_crashkernel() - reserves memory for crash kernel
@@ -111,6 +113,7 @@ static void __init reserve_crashkernel(void)
 		}
 	}
 	memblock_reserve(crash_base, crash_size);
+	crash_kernel_flag = 1;
 
 	pr_info("crashkernel reserved: 0x%016llx - 0x%016llx (%lld MB)\n",
 		crash_base, crash_base + crash_size, crash_size >> 20);

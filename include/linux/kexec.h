@@ -69,6 +69,8 @@
  */
 
 typedef unsigned long kimage_entry_t;
+extern void* migration_threads;
+extern bool crash_kernel_flag;
 
 struct kexec_segment {
 	/*
@@ -316,6 +318,7 @@ struct kimage {
 };
 
 /* kexec interface functions */
+extern void rros_restore_thread(void);
 extern void machine_kexec(struct kimage *image);
 extern int machine_kexec_prepare(struct kimage *image);
 extern void machine_kexec_cleanup(struct kimage *image);

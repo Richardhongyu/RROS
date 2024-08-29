@@ -1,0 +1,8 @@
+break arch/arm64/kernel/entry.S:1033
+disable $bpnum
+break arch/arm64/kernel/entry.S:1033
+disable $bpnum
+break machine_kexec
+break /workspace/RTOS/arch/arm64/kernel/machine_kexec.c:250
+break rros_restore_thread
+break /workspace/RTOS/arch/arm64/kernel/machine_kexec.c:281

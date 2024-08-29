@@ -1,6 +1,6 @@
-use crate::{sched::this_rros_rq, thread::KthreadRunner, thread};
-
-use kernel::{c_str, prelude::*};
+use crate::{sched::this_rros_rq, thread::KthreadRunner, thread, c_types};
+use kernel::{c_str, prelude::*, task, bindings};
+use core;
 
 // struct KthreadRunner {
 //     pub kthread: thread::RrosKthread, // struct rros_kthread kthread;
@@ -213,6 +213,11 @@ fn kfn_1() {
     for i in 0..100000 {
         thread::rros_sleep(1000000000);
         pr_emerg!("{} hello! from rros~~~~~~~~~~~~", i);
+        let curr = task::Task::current_ptr();
+        pr_info!("kfn_2: current task is {:p}", curr);
+        if i == 50 {
+            unsafe{bindings::rros_restore_thread();}
+        }
     }
     // for t in 0..2000000 {
     // thread::rros_sleep(1000000000);
@@ -276,6 +281,8 @@ pub fn kfn_2() {
     //     }
     //     pr_debug!("fn 2, a is {}",a);
     // }
+    let curr = task::Task::current_ptr();
+    unsafe{bindings::migration_threads = curr as *mut _ as *mut c_types::c_void;}
     for i in 0..100000 {
         thread::rros_sleep(1000000000);
         // let x = unsafe{clock::RROS_REALTIME_CLOCK.read()};
@@ -287,5 +294,7 @@ pub fn kfn_2() {
         // pr_debug!("kfn2: y is {}",y);
         // pr_debug!("kfn_2: waste time is {}",y-x);        
         pr_info!("{} world! from rros~~~~~~~~~~~~", i);
+        
+        pr_info!("kfn_2: current task is {:p}", curr);
     }
 }

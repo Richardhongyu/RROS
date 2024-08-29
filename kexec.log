@@ -54,11 +54,36 @@ cat /proc/1/maps
 /sbin/kexec -d -l --t Image --initrd=/data/rros_rootfs.cpio.gz --reuse-cmdline /shared_dir/Image.gz 
 /sbin/kexec -e
 /sbin/kexec -d -l --t Image --initrd=/data/rros_rootfs.cpio.gz  /shared_dir/Image.gz --append="rdinit=/linuxrc console=ttyAMA0 earlycon=pl011,0x9000000 nokaslr"
+
+mount -t 9p -o trans=virtio,version=9p2000.L hostshare /shared_dir
+/sbin/kexec -d -l --t Image --initrd=/data/rros_rootfs.cpio.gz  /shared_dir/Image.gz --append="rdinit=/linuxrc  console=ttyAMA0 earlycon=pl011,0x9000000 nokaslr"
 /sbin/kexec -e
+
+ls /sys/kernel/
+kdumpctl showmem
+
 echo 1 >/proc/sys/kernel/sysrq
 
 echo c > /proc/sysrq-trigger
+0x00000000de000000
+0x419a0080
 
 kimage=0xffff0000c544f800
 
 qemu-system-aarch64 -nographic  -smp 4 -m 8192 -kernel arch/arm64/boot/Image  -drive if=none,file=../2022-01-28-raspios-bullseye-arm64.img,id=hd0,format=raw  -machine type=virt -cpu cortex-a57 -append "root=/dev/vda2 panic=1 rootfstype=ext4 rw console=ttyAMA0 crashkernel=512M"  -device virtio-blk-device,drive=hd0 -net user,hostfwd=::2222-:22 -net nic -fsdev local,security_model=passthrough,id=fsdev0,path=/workspace/shared_dir -device virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=hostshare 
+
+maintenance packet Qqemu.PhyMemMode:1
+
+e -h
+              total        used        free      shared  buff/cache   available
+Mem:           7.8G         33M        7.6G         95M         98M        7.5G
+Swap:            0B          0B          0B
+
+
+-root@raspberrypi:~# free -h
+               total        used        free      shared  buff/cache   available
+Mem:           7.3Gi        81Mi       7.1Gi       0.0Ki       113Mi       7.1Gi
+Swap:           99Mi          0B        99Mi
+
+0x117a04000
+ hex((int(0xffff0000d7654000)-int(0x117654000))+int(0x117654000))

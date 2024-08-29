@@ -600,6 +600,7 @@ void kimage_terminate(struct kimage *image)
 	if (*image->entry != 0)
 		image->entry++;
 
+	// TODO: When to handle IND_DONE
 	*image->entry = IND_DONE;
 }
 

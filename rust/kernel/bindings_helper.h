@@ -35,6 +35,7 @@
 #include <uapi/linux/unistd.h>
 #include <linux/capability.h>
 #include <linux/anon_inodes.h>
+#include <linux/kexec.h>
 
 // `bindgen` gets confused at certain things
 const gfp_t BINDINGS_GFP_KERNEL = GFP_KERNEL;
